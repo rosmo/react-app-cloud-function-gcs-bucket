@@ -3,9 +3,7 @@
 ## How the app was created
 
 1) `npx create-react-app my-app`
-2) Move static stuff (images, CSS, JS) into `my-app/public/static` to simplify path rules
-3) Add `homepage` to `my-app/package.json`.
-4) Create a simple [`Dockerfile`](Dockerfile)
+2) Add `homepage` to `my-app/package.json`.
 
 ## How to deploy
 
@@ -19,7 +17,7 @@ region="europe-west4"
 
 Then build the application (this creates the required `my-app/build` directory):
 ```sh
-# cd my-app && npm run build
+# cd my-app && npm run build && cd ..
 ```
 
 Now, we should be able to deploy the solution with:
