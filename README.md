@@ -30,6 +30,9 @@ Now, we should be able to deploy the solution with:
 The load balancer will take a while to get programmed and after a couple minutes, you should
 be able to use the application via the provisioned load balancer!
 
+*NEW:* You can also deploy a regional load balancer, which currently uses a Nginx based 
+proxy to access the files in the bucket by setting `regional_lb = true`.
+
 ## Resulting URL map
 
 ```

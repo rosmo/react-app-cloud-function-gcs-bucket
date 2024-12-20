@@ -57,3 +57,33 @@ variable "backend_service_account" {
   description = "Service account to use for backend"
   default     = "my-react-app-backend"
 }
+
+variable "global_lb" {
+  type        = bool
+  description = "Deploy a global load balancer"
+  default     = true
+}
+
+variable "regional_lb" {
+  type        = bool
+  description = "Deploy a regional load balancer"
+  default     = false
+}
+
+variable "vpc_config" {
+  type = object({
+    network                = string
+    network_project        = optional(string)
+    subnetwork             = string
+    subnet_cidr            = optional(string, "172.20.20.0/24")
+    proxy_only_subnetwork  = string
+    proxy_only_subnet_cidr = optional(string, "172.20.30.0/24")
+    create                 = optional(bool, true)
+  })
+  description = "Settings for VPC (required when deploying a Regional XLB)"
+  default = {
+    network               = "my-react-app-vpc"
+    subnetwork            = "my-react-app-vpc-subnet"
+    proxy_only_subnetwork = "my-react-app-vpc-proxy-subnet"
+  }
+}
