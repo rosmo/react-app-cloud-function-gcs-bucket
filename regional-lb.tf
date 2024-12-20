@@ -199,6 +199,12 @@ module "xlb-regional" {
               },
               {
                 path = {
+                  value = "/*.js"
+                  type  = "template"
+                }
+              },
+              {
+                path = {
                   value = "/*.txt"
                   type  = "template"
                 }

@@ -88,14 +88,14 @@ module "build-bucket" {
 }
 
 resource "google_storage_bucket_object" "objects" {
-  for_each = { for f in fileset(format("%s/my-app/build/", path.module), "**") : f => {
-    name   = replace(f, format("%s/my-app/build/", path.module), "")
+  for_each = { for f in fileset(format("%s/my-app/dist/", path.module), "**") : f => {
+    name   = replace(f, format("%s/my-app/dist/", path.module), "")
     source = f
   } }
 
   bucket       = module.bucket.id
   name         = each.value.name
-  source       = format("%s/my-app/build/%s", path.module, each.value.source)
+  source       = format("%s/my-app/dist/%s", path.module, each.value.source)
   content_type = element(reverse([for ext, mime in local.mime_types : mime if length(regexall(ext, each.key)) > 0]), 0)
 
   # For development, in production you may want a longer caching period

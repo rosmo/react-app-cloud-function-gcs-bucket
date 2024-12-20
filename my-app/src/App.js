@@ -1,4 +1,4 @@
-import logo from './logo.svg';
+import Logo from './logo.svg';
 import './App.css';
 import React, { useState, useEffect } from "react";
 
@@ -20,7 +20,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <h1 id="title-text">Google Cloud React test app</h1>
-        <img src={logo} className="App-logo" alt="logo" />
+        <Logo className="App-logo" alt="logo" />
         <p>
           Anything is possible at this URL. The backend says:
           <pre>

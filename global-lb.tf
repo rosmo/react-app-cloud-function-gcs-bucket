@@ -86,6 +86,12 @@ module "xlb" {
               },
               {
                 path = {
+                  value = "/*.js"
+                  type  = "template"
+                }
+              },
+              {
+                path = {
                   value = "/static/"
                   type  = "prefix"
                 }
