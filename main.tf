@@ -38,6 +38,37 @@ locals {
     "\\.svg$"    = "image/svg+xml"
     ".*"         = "application/octet-stream"
   }
+  app_path = format("%s/my-app/dist", path.module)
+
+  # Collect all assets and hashes from webpack build
+  asset_manifest = jsondecode(file(format("%s/assets-manifest.json", local.app_path)))
+
+  # Determine which extensions go to what CSP tag
+  integrity_assets = {
+    ".css" = "style-src",
+    ".js"  = "script-src"
+  }
+
+  # Build a list of assets
+  assets = { for f in fileset(local.app_path, "**") : filesha256(format("%s/%s", local.app_path, f)) =>
+    {
+      name            = replace(f, local.app_path, "")
+      source          = f
+      integrity_class = try(element([for ext, cls in local.integrity_assets : cls if endswith(f, ext)], 0), "")
+      integrity_hash  = try(element(split(" ", local.asset_manifest[replace(f, "${local.app_path}/", "")].integrity), 1), "")
+    }
+  }
+
+  # Create CSP header
+  csp_settings = {
+    "script-src" = compact([for k, v in local.assets : format("'%s'", v.integrity_hash) if v.integrity_hash != "" && v.integrity_class == "script-src"])
+    "style-src"  = compact([for k, v in local.assets : format("'%s'", v.integrity_hash) if v.integrity_hash != "" && v.integrity_class == "style-src"])
+  }
+
+  # The CSP header
+  # (Please note that using hashes for styles does not seem to be supported for stylesheets, 
+  # at least on Chrome - Safari seems to understand style-src. This is why 'self' is included in style-src.)
+  csp_header = format("default-src 'none'; base-uri 'self'; connect-src 'self'; img-src 'self'; manifest-src 'self'; script-src-elem %s; style-src-elem 'self' %s; script-src %s; style-src 'self' %s;", join(" ", local.csp_settings["script-src"]), join(" ", local.csp_settings["style-src"]), join(" ", local.csp_settings["script-src"]), join(" ", local.csp_settings["style-src"]))
 }
 
 resource "random_string" "random" {
@@ -88,15 +119,12 @@ module "build-bucket" {
 }
 
 resource "google_storage_bucket_object" "objects" {
-  for_each = { for f in fileset(format("%s/my-app/dist/", path.module), "**") : f => {
-    name   = replace(f, format("%s/my-app/dist/", path.module), "")
-    source = f
-  } }
+  for_each = local.assets
 
   bucket       = module.bucket.id
   name         = each.value.name
   source       = format("%s/my-app/dist/%s", path.module, each.value.source)
-  content_type = element(reverse([for ext, mime in local.mime_types : mime if length(regexall(ext, each.key)) > 0]), 0)
+  content_type = element(reverse([for ext, mime in local.mime_types : mime if length(regexall(ext, each.value.name)) > 0]), 0)
 
   # For development, in production you may want a longer caching period
   cache_control = "public, max-age=0, s-maxage=0"

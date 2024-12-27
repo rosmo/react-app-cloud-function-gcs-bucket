@@ -205,18 +205,25 @@ module "xlb-regional" {
               },
               {
                 path = {
-                  value = "/*.txt"
+                  value = "/*.css"
                   type  = "template"
                 }
               },
               {
                 path = {
-                  value = "/static/"
-                  type  = "prefix"
+                  value = "/*.txt"
+                  type  = "template"
+                }
+              },
+            ]
+            service = "regional-gcs-proxy-backend"
+            header_action = {
+              response_add = {
+                "Content-Security-Policy" = {
+                  value = local.csp_header
                 }
               }
-            ]
-            service  = "regional-gcs-proxy-backend"
+            }
             priority = 60
           },
           {
@@ -231,6 +238,13 @@ module "xlb-regional" {
             ]
             service  = "regional-gcs-proxy-backend"
             priority = 100
+            header_action = {
+              response_add = {
+                "Content-Security-Policy" = {
+                  value = local.csp_header
+                }
+              }
+            }
             route_action = {
               url_rewrite = {
                 path_template = "/index.html"

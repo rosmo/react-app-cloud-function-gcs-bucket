@@ -86,18 +86,25 @@ module "xlb" {
               },
               {
                 path = {
-                  value = "/*.js"
+                  value = "/*.css"
                   type  = "template"
                 }
               },
               {
                 path = {
-                  value = "/static/"
-                  type  = "prefix"
+                  value = "/*.js"
+                  type  = "template"
+                }
+              },
+            ]
+            service = "gcs-static"
+            header_action = {
+              response_add = {
+                "Content-Security-Policy" = {
+                  value = local.csp_header
                 }
               }
-            ]
-            service  = "gcs-static"
+            }
             priority = 60
           },
           {
@@ -112,6 +119,13 @@ module "xlb" {
             ]
             service  = "gcs-static"
             priority = 100
+            header_action = {
+              response_add = {
+                "Content-Security-Policy" = {
+                  value = local.csp_header
+                }
+              }
+            }
             route_action = {
               url_rewrite = {
                 path_template = "/index.html"

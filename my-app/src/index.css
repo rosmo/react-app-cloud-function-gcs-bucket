@@ -11,3 +11,15 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+#title-text {
+  font-size: 30pt;
+  font-weight: bold;
+  font-color: green;
+}
+
+#subtitle-text {
+  font-size: 24pt;
+  font-weight: bold;
+  font-color: lightblue;
+}
