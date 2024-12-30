@@ -23,6 +23,6 @@ import App from './App';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <App backendUrl="https://api.regional.react.test.taneli.joonix.net" />
+    <App backendUrl="" />
   </React.StrictMode>
 );
