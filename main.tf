@@ -12,17 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module "project" {
-  source         = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/project?ref=daily-2024.12.20"
-  name           = var.project_id
-  project_create = false
-  services = [
-    "compute.googleapis.com",
-    "cloudfunctions.googleapis.com",
-    "run.googleapis.com",
-  ]
-}
-
 locals {
   mime_types = {
     "\\.js$"     = "text/javascript"
@@ -66,13 +55,42 @@ locals {
   }
 
   # The CSP header
-  # (Please note that using hashes for styles does not seem to be supported for stylesheets, 
+  # (Please note that using hashes for styles does not seem to be supported for stylesheets,
   # at least on Chrome - Safari seems to understand style-src. This is why 'self' is included in style-src.)
-  csp_header = format("default-src 'none'; base-uri 'self'; connect-src 'self'; img-src 'self'; manifest-src 'self'; script-src-elem %s; style-src-elem 'self' %s; script-src %s; style-src 'self' %s;", join(" ", local.csp_settings["script-src"]), join(" ", local.csp_settings["style-src"]), join(" ", local.csp_settings["script-src"]), join(" ", local.csp_settings["style-src"]))
+  csp_header                  = format("base-uri 'self'; img-src 'self'; manifest-src 'self'; script-src-elem %s; style-src-elem 'self' %s; script-src %s; style-src 'self' %s;", join(" ", local.csp_settings["script-src"]), join(" ", local.csp_settings["style-src"]), join(" ", local.csp_settings["script-src"]), join(" ", local.csp_settings["style-src"]))
+  backend_url_global          = var.dns_config != null ? format("http://%s.%s", var.dns_config.backend, trimsuffix(module.dns[""].domain, ".")) : ""
+  backend_regional_url_global = var.dns_config != null ? format("http://%s.regional.%s", var.dns_config.backend, trimsuffix(module.dns[""].domain, ".")) : ""
+  # Be careful not to put a slash at the end of the backend API URLs
+  csp_header_global   = format("default-src 'none'; connect-src 'self'%s; %s", (var.dns_config != "" ? " ${local.backend_url_global}" : ""), local.csp_header)
+  csp_header_regional = format("default-src 'none'; connect-src 'self'%s; %s", (var.dns_config != "" ? " ${local.backend_regional_url_global}" : ""), local.csp_header)
 }
 
+module "project" {
+  source = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/project?ref=daily-2024.12.30"
+  billing_account = (var.project_create != null
+    ? var.project_create.billing_account_id
+    : null
+  )
+  parent = (var.project_create != null
+    ? var.project_create.parent
+    : null
+  )
+  name = var.project_id
+  services = [
+    "compute.googleapis.com",
+    "cloudfunctions.googleapis.com",
+    "run.googleapis.com",
+    "storage.googleapis.com",
+    "cloudbuild.googleapis.com",
+    "iap.googleapis.com",
+    "certificatemanager.googleapis.com",
+  ]
+  project_create = var.project_create != null
+}
+
+
 resource "random_string" "random" {
-  count   = var.bucket_random_suffix == true ? 1 : 0
+  count   = var.bucket.random_suffix == true ? 1 : 0
   length  = 8
   lower   = true
   upper   = false
@@ -81,9 +99,9 @@ resource "random_string" "random" {
 }
 
 module "bucket" {
-  source     = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/gcs?ref=daily-2024.12.20"
+  source     = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/gcs?ref=daily-2024.12.30"
   project_id = module.project.project_id
-  name       = var.bucket_random_suffix == true ? format("%s-%s", var.bucket_name, random_string.random.0.result) : var.bucket_name
+  name       = var.bucket.random_suffix == true ? format("%s-%s", var.bucket.name, random_string.random.0.result) : var.bucket.name
   location   = var.region
   versioning = false
   labels     = {}
@@ -96,25 +114,28 @@ module "bucket" {
     main_page_suffix = "index.html"
     not_found_page   = "404.html"
   }
+
 }
 
 module "service-account" {
-  source            = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/iam-service-account?ref=daily-2024.12.20"
+  source            = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/iam-service-account?ref=daily-2024.12.30"
   project_id        = module.project.project_id
-  name              = var.backend_service_account
+  name              = var.backend.service_account
   iam_project_roles = {}
 }
 
 module "build-bucket" {
-  source     = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/gcs?ref=daily-2024.12.20"
+  source     = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/gcs?ref=daily-2024.12.30"
   project_id = module.project.project_id
-  name       = var.bucket_random_suffix == true ? format("%s-%s", var.build_bucket_name, random_string.random.0.result) : var.build_bucket_name
+  name       = var.bucket.random_suffix == true ? format("%s-%s", var.bucket.build_name, random_string.random.0.result) : var.bucket.build_name
   location   = var.region
   versioning = false
   labels     = {}
 
   iam = {
-    "roles/storage.objectViewer" = [format("serviceAccount:%d-compute@developer.gserviceaccount.com", module.project.number)]
+    "roles/storage.objectViewer" = [
+      format("serviceAccount:%s", module.project.default_service_accounts.compute)
+    ]
   }
 }
 
@@ -131,10 +152,10 @@ resource "google_storage_bucket_object" "objects" {
 }
 
 module "backend" {
-  source      = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/cloud-function-v2?ref=daily-2024.12.20"
+  source      = "github.com/GoogleCloudPlatform/cloud-foundation-fabric//modules/cloud-function-v2?ref=daily-2024.12.30"
   project_id  = module.project.project_id
   region      = var.region
-  name        = var.backend_function_name
+  name        = var.backend.function_name
   bucket_name = module.build-bucket.name
 
   service_account = module.service-account.email
@@ -145,6 +166,12 @@ module "backend" {
   bundle_config = {
     path = format("%s/backend", path.module)
   }
+
+  environment_variables = var.iap_config.enabled == true ? {
+    IAP_AUDIENCE = "true"
+  } : {}
+
+  ingress_settings = "ALLOW_INTERNAL_AND_GCLB"
 
   iam = {
     "roles/run.invoker" = ["allUsers"]

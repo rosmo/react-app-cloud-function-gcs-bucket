@@ -19,11 +19,14 @@ import Logo from './logo.svg';
 import './App.css';
 import React, { useState, useEffect } from "react";
 
-function App() {
+function App(props) {
   const [apiResult, setApiResult] = useState(null);
   useEffect(() => {
-    fetch("/api/hello", {
+    fetch(props.backendUrl + "/api/hello", {
       method: "GET",
+      // This is required for IAP support or sending a session cookie to the backend when it's 
+      // in a different domain.
+      credentials: "include",
     })
       .then((response) => response.text())
       .then((data) => {

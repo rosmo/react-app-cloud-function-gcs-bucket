@@ -1,4 +1,3 @@
-/*
 # Copyright 2024 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-Created using create-react-app: https://create-react-app.dev/
-*/
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
+output "global_lb" {
+  value       = var.global_lb ? (var.dns_config != null ? format("http://%s", trimsuffix(google_dns_record_set.frontend[""].name, ".")) : format("http://%s", module.xlb[""].address)) : null
+  description = "Global load balancer address."
+}
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <App backendUrl="https://api.regional.react.test.taneli.joonix.net" />
-  </React.StrictMode>
-);
+output "regional_lb" {
+  value       = var.regional_lb ? (var.dns_config != null ? format("http://%s", trimsuffix(google_dns_record_set.frontend-regional[""].name, ".")) : format("http://%s", module.xlb-regional[""].address)) : null
+  description = "Regional load balancer address."
+}
