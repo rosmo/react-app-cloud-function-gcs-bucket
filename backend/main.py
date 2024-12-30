@@ -15,7 +15,7 @@
 import functions_framework
 import os
 import sys
-from google.auth.transport import requests as auth_requests
+from google.auth.transport import requests
 from google.oauth2 import id_token
 from flask import abort
 
@@ -35,7 +35,7 @@ def validate_iap_jwt(iap_jwt, expected_audience):
     try:
         decoded_jwt = id_token.verify_token(
             iap_jwt,
-            auth_requests.Request(),
+            requests.Request(),
             # Normally we would have an audience here, but this creates a chicken and an egg problem
             # due to backend service needing to point to a function, so the audience is created after
             # deployment. We could store the audience in a Secret Manager secret to decouple the process,
