@@ -112,6 +112,28 @@ You also need to set `backendUrl` to (for example) `https://backend.react.test.e
 in [`my-app/App/index.js`](my-app/App/index.js) (and run `cd my-app/ && npm run build && cd ..` afterwards).
 
 *Note:* you can't have both global and load balancers active in this configuration.
+
+### Multi-region
+
+You can deploy multi-regional resources by setting `secondary_region` (you should also set the `bucket.location` to a
+dual or multi-regional location).
+
+### Dockerfile and Cloud Build
+
+A [`Dockerfile`](Dockerfile) is included for building for Cloud Run. Also a [`cloudbuild.yaml`](cloudbuild.yaml) is included
+to use Cloud Build to build the container. 
+
+If using GitHub, enable `sourcerepos.googleapis.com` and `cloudbuild.googleapis.com` and connect the GitHub
+repository to Cloud Source Repositories. Create an Artifact Registry in your chosen region (default `react-app`).
+Create a Service Account with the following IAM permissions:
+- `Artifact Registry Writer` to the aforementioned Artifact Registry or project wide
+- `Logs Writer` for Cloud Logging to the project
+- `Source Repository Reader` to the project
+
+
+Then create a trigger in the same region in Cloud Build, select the repo, service account and other settings.
+
+
 <!-- BEGIN TFDOC -->
 ## Variables
 
